@@ -61,14 +61,14 @@ FastIPTV is a simple and intuitive IPTV player that allows users to easily manag
 1. **Sklonuj repozytorium:**
 
     ```bash
-    git clone https://github.com/TwojeRepozytorium/FastIPTV.git
+    git clone  https://github.com/swir/FastIPTVplayer.git
     cd FastIPTV
     ```
 
     **Clone the repository:**
 
     ```bash
-    git clone https://github.com/YourRepository/FastIPTV.git
+    git clone https://github.com/swir/FastIPTVplayer.git
     cd FastIPTV
     ```
 
