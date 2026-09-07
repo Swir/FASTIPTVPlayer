@@ -2,8 +2,8 @@
 
 # 📺 FastIPTV Player
 
-**Terminal IPTV playlist manager and VLC launcher by Swir**  
-**Terminalowy menedżer playlist IPTV i launcher VLC autorstwa Swir**
+**Python M3U/M3U8 IPTV playlist manager, channel browser, EPG utility and VLC launcher**  
+**Menedżer playlist IPTV M3U/M3U8, kanałów, EPG i launcher VLC w Pythonie**
 
 ![Python](https://img.shields.io/badge/Python-3.7%2B-3776AB?logo=python&logoColor=white)
 ![VLC](https://img.shields.io/badge/Player-VLC-FF8800?logo=vlcmediaplayer)
@@ -16,10 +16,10 @@
 
 ## 🇬🇧 English
 
-FastIPTV Player is a Python terminal application for organizing and opening IPTV playlists with VLC Media Player. It provides channel search, group browsing, EPG support, proxy configuration and readable terminal output powered by Rich.
+FastIPTV Player is a Python terminal IPTV playlist manager for organizing authorized M3U/M3U8 playlists and opening streams with VLC Media Player. It provides channel search, group browsing, EPG support, proxy configuration and readable terminal output powered by Rich.
 
 ### ✨ Features
-- load local M3U playlists
+- load local M3U/M3U8 playlists
 - search channels and browse groups
 - launch streams in VLC Media Player
 - configurable VLC path
@@ -43,10 +43,10 @@ VLC Media Player must be installed separately.
 
 ## 🇵🇱 Polski
 
-FastIPTV Player to terminalowa aplikacja Python do organizowania playlist IPTV oraz uruchamiania strumieni w VLC Media Player. Program oferuje wyszukiwanie kanałów, grupowanie, obsługę EPG, konfigurację proxy i czytelny interfejs terminalowy oparty o Rich.
+FastIPTV Player to terminalowy menedżer playlist IPTV w Pythonie do organizowania autoryzowanych list M3U/M3U8 oraz uruchamiania strumieni w VLC Media Player. Program oferuje wyszukiwanie kanałów, grupowanie, obsługę EPG, konfigurację proxy i czytelny interfejs terminalowy oparty o Rich.
 
 ### ✨ Funkcje
-- wczytywanie lokalnych playlist M3U
+- wczytywanie lokalnych playlist M3U/M3U8
 - wyszukiwanie kanałów i przeglądanie grup
 - uruchamianie strumieni w VLC
 - konfiguracja ścieżki do VLC
@@ -55,16 +55,8 @@ FastIPTV Player to terminalowa aplikacja Python do organizowania playlist IPTV o
 - interfejs terminalowy Rich
 - logowanie błędów do `error.log`
 
-### 🚀 Instalacja
-
-```bash
-git clone https://github.com/Swir/FASTIPTVPlayer.git
-cd FASTIPTVPlayer
-pip install -r requirements.txt
-python run.py
-```
-
-VLC Media Player należy zainstalować osobno.
+### 🔎 Discoverability / Keywords
+`iptv player` • `python iptv player` • `m3u player` • `m3u8 player` • `iptv playlist manager` • `vlc launcher` • `epg` • `terminal iptv`
 
 ---
 
