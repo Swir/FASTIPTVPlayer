@@ -1,5 +1,3 @@
-"""Compatibility launcher for users of the original `python run.py` command."""
-
 from fastiptv.app import main
 
 
