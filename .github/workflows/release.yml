@@ -1,0 +1,80 @@
+name: Windows Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: pytest
+      - name: Build Windows icon
+        run: python tools/build_icon.py
+      - name: Build executable
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed --name FastIPTVPlayer --icon assets/fastiptv.ico --add-data "assets;assets" --paths src main.py
+      - name: Smoke-test executable
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ".\dist\FastIPTVPlayer.exe" -ArgumentList "--version" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Executable smoke test failed with exit code $($process.ExitCode)" }
+      - name: Resolve release tag
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/*") {
+            $tag = "${{ github.ref_name }}"
+          } else {
+            $version = python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])"
+            $tag = "v$version"
+          }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "name=FastIPTV Player $tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Package portable build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item dist/FastIPTVPlayer.exe package/FastIPTVPlayer.exe
+          Copy-Item README.md package/README.md
+          Copy-Item CHANGELOG.md package/CHANGELOG.md
+          Compress-Archive -Path package/* -DestinationPath "FastIPTVPlayer-${{ steps.meta.outputs.tag }}-Windows-x64.zip" -Force
+          $zipHash = (Get-FileHash "FastIPTVPlayer-${{ steps.meta.outputs.tag }}-Windows-x64.zip" -Algorithm SHA256).Hash.ToLower()
+          "$zipHash  FastIPTVPlayer-${{ steps.meta.outputs.tag }}-Windows-x64.zip" | Set-Content "FastIPTVPlayer-${{ steps.meta.outputs.tag }}-Windows-x64.zip.sha256"
+          $exeHash = (Get-FileHash "dist/FastIPTVPlayer.exe" -Algorithm SHA256).Hash.ToLower()
+          "$exeHash  FastIPTVPlayer.exe" | Set-Content "FastIPTVPlayer.exe.sha256"
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.meta.outputs.name }}
+          generate_release_notes: true
+          make_latest: true
+          files: |
+            dist/FastIPTVPlayer.exe
+            FastIPTVPlayer.exe.sha256
+            FastIPTVPlayer-${{ steps.meta.outputs.tag }}-Windows-x64.zip
+            FastIPTVPlayer-${{ steps.meta.outputs.tag }}-Windows-x64.zip.sha256
