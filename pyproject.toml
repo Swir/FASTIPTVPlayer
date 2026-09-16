@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastiptv-player-swir"
+version = "2.0.0"
+description = "Modern M3U/M3U8 playlist browser, XMLTV guide and VLC launcher."
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+authors = [{name = "Swir"}]
+dependencies = [
+  "PySide6>=6.11.2,<6.12",
+  "requests>=2.32,<3",
+  "platformdirs>=4.11,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10",
+  "PyInstaller>=6,<7",
+  "Pillow>=11,<13",
+]
+
+[project.scripts]
+fastiptv = "fastiptv.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
