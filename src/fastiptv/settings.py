@@ -15,6 +15,7 @@ class AppSettings:
     recent_playlists: list[str] = field(default_factory=list)
     epg_url: str = ""
     epg_sources: list[str] = field(default_factory=list)
+    proxy_url: str = ""
 
     @classmethod
     def from_dict(cls, data: Any) -> "AppSettings":
@@ -32,6 +33,7 @@ class AppSettings:
             recent_playlists=recent,
             epg_url=epg_url,
             epg_sources=epg_sources,
+            proxy_url=str(data.get("proxy_url", "")).strip(),
         )
 
 
@@ -53,10 +55,11 @@ def settings_path() -> Path:
 
 
 def _load_legacy_config(path: Path) -> AppSettings | None:
-    """Import only safe user preferences from the classic terminal config.
+    """Import safe user preferences from the classic terminal config.
 
-    Legacy proxy-source settings are intentionally ignored. We only preserve the VLC
-    path and EPG source list, because those are ordinary local playback/guide settings.
+    Automatic public proxy-source settings are intentionally ignored. The old
+    application did not persist its selected proxy URL, so there is no manual
+    proxy value to migrate. VLC and EPG preferences are ordinary local settings.
     """
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
