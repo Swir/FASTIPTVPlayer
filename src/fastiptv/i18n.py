@@ -20,6 +20,12 @@ _STRINGS = {
         "epg_source_removed": "EPG source removed.",
         "epg_source_none": "No saved EPG sources.",
         "vlc_path": "VLC path",
+        "playback": "Playback",
+        "manual_proxy": "Manual VLC proxy…",
+        "proxy_prompt": "HTTP proxy as host:port. Leave blank to disable.\nNo public proxy lists are downloaded or tested.",
+        "proxy_enabled": "Manual VLC proxy enabled: {proxy}",
+        "proxy_disabled": "Manual VLC proxy disabled.",
+        "proxy_error": "Proxy error: {error}",
         "play": "Play in VLC",
         "favorite": "Favorite",
         "copy_url": "Copy URL",
@@ -47,6 +53,7 @@ _STRINGS = {
         "favorite_added": "Added to favorites: {name}",
         "favorite_removed": "Removed from favorites: {name}",
         "working": "Working…",
+        "smoke_ready": "GUI smoke test ready.",
     },
     "pl": {
         "open_file": "Otwórz playlistę",
@@ -65,6 +72,12 @@ _STRINGS = {
         "epg_source_removed": "Usunięto źródło EPG.",
         "epg_source_none": "Brak zapisanych źródeł EPG.",
         "vlc_path": "Ścieżka VLC",
+        "playback": "Odtwarzanie",
+        "manual_proxy": "Ręczne proxy VLC…",
+        "proxy_prompt": "Proxy HTTP jako host:port. Zostaw puste, aby wyłączyć.\nProgram nie pobiera ani nie testuje publicznych list proxy.",
+        "proxy_enabled": "Włączono ręczne proxy VLC: {proxy}",
+        "proxy_disabled": "Wyłączono ręczne proxy VLC.",
+        "proxy_error": "Błąd proxy: {error}",
         "play": "Odtwórz w VLC",
         "favorite": "Ulubione",
         "copy_url": "Kopiuj URL",
@@ -92,12 +105,16 @@ _STRINGS = {
         "favorite_added": "Dodano do ulubionych: {name}",
         "favorite_removed": "Usunięto z ulubionych: {name}",
         "working": "Pracuję…",
+        "smoke_ready": "Test GUI gotowy.",
     },
 }
 
 
 def system_language() -> str:
-    code = (locale.getlocale()[0] or "").lower()
+    try:
+        code = (locale.getlocale()[0] or "").lower()
+    except (TypeError, ValueError):
+        code = ""
     return "pl" if code.startswith("pl") else "en"
 
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.2.0 - 2026-09-17
+
+### Restored
+- Fuzzy XMLTV channel-name matching from the classic FastIPTV workflow, used only after exact `tvg-id` and normalized-name matching fail.
+- Manual VLC HTTP proxy playback for a proxy the user already controls or is authorized to use.
+
+### Safety
+- Automatic public proxy-list harvesting, aggregation, scanning and testing remain removed.
+- Manual proxy configuration accepts only an explicit HTTP/HTTPS host and port, with no credentials or URL paths, and is never auto-tested against public services.
+
+### Fixed
+- The regression audit identified that v2.0/v2.1 exact-only EPG matching could lose guide data when playlist and XMLTV providers used slightly different channel names.
+
+### Added
+- Persistent manual proxy setting stored in the modern per-user settings file.
+- Offline `--smoke-gui` mode that instantiates the real Qt application window without downloading playlists/EPG or starting VLC.
+- Windows GUI startup smoke test in pull-request CI.
+- Packaged-EXE GUI startup smoke test as a mandatory release gate.
+- Regression tests for fuzzy EPG matching, proxy validation and VLC argument construction.
+
+### Documentation
+- README continues to display the custom FastIPTV icon and now documents the v2.2 restored behavior and stronger release validation.
+
 ## 2.1.0 - 2026-09-17
 
 ### Restored

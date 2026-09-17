@@ -30,17 +30,27 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: pytest
+      - name: Source GUI smoke test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python main.py --smoke-gui
       - name: Build Windows icon
         run: python tools/build_icon.py
       - name: Build executable
         shell: pwsh
         run: |
           pyinstaller --noconfirm --clean --onefile --windowed --name FastIPTVPlayer --icon assets/fastiptv.ico --add-data "assets;assets" --paths src main.py
-      - name: Smoke-test executable
+      - name: Smoke-test executable metadata
         shell: pwsh
         run: |
           $process = Start-Process -FilePath ".\dist\FastIPTVPlayer.exe" -ArgumentList "--version" -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Executable smoke test failed with exit code $($process.ExitCode)" }
+          if ($process.ExitCode -ne 0) { throw "Executable version smoke test failed with exit code $($process.ExitCode)" }
+      - name: Smoke-test packaged GUI
+        shell: pwsh
+        run: |
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $process = Start-Process -FilePath ".\dist\FastIPTVPlayer.exe" -ArgumentList "--smoke-gui" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Packaged GUI smoke test failed with exit code $($process.ExitCode)" }
       - name: Resolve release tag
         id: meta
         shell: pwsh
