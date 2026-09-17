@@ -67,10 +67,11 @@ class FastIPTVWindow(QMainWindow):
         self._tasks: set[BackgroundTask] = set()
 
         self.setWindowTitle("FastIPTV Player 2 — by Swir")
-        self.resize(1120, 680)
-        self.setMinimumSize(780, 500)
+        self.resize(1120, 710)
+        self.setMinimumSize(780, 520)
         self._build_ui()
         self._apply_theme()
+        self._refresh_recent_combo()
 
     def _build_ui(self) -> None:
         central = QWidget(self)
@@ -98,6 +99,9 @@ class FastIPTVWindow(QMainWindow):
         self.epg_button = QPushButton(self.tr("load_epg"))
         self.epg_button.clicked.connect(self.load_epg_url)
         primary.addWidget(self.epg_button)
+        self.epg_sources_button = QPushButton(self.tr("epg_sources"))
+        self.epg_sources_button.clicked.connect(self.manage_epg_sources)
+        primary.addWidget(self.epg_sources_button)
         self.vlc_button = QPushButton(self.tr("vlc_path"))
         self.vlc_button.clicked.connect(self.choose_vlc)
         primary.addWidget(self.vlc_button)
@@ -112,6 +116,18 @@ class FastIPTVWindow(QMainWindow):
         self.copy_button.clicked.connect(self.copy_selected_url)
         primary.addWidget(self.copy_button)
         root.addLayout(primary)
+
+        recent = QHBoxLayout()
+        recent_label = QLabel(self.tr("recent"))
+        recent_label.setObjectName("muted")
+        recent.addWidget(recent_label)
+        self.recent_combo = QComboBox()
+        self.recent_combo.setMinimumWidth(300)
+        recent.addWidget(self.recent_combo, 1)
+        self.open_recent_button = QPushButton(self.tr("open_recent"))
+        self.open_recent_button.clicked.connect(self.open_recent)
+        recent.addWidget(self.open_recent_button)
+        root.addLayout(recent)
 
         filters = QHBoxLayout()
         self.search = QLineEdit()
@@ -173,7 +189,13 @@ class FastIPTVWindow(QMainWindow):
         )
 
     def _set_busy(self, busy: bool) -> None:
-        for widget in (self.open_file_button, self.open_url_button, self.epg_button):
+        for widget in (
+            self.open_file_button,
+            self.open_url_button,
+            self.open_recent_button,
+            self.epg_button,
+            self.epg_sources_button,
+        ):
             widget.setEnabled(not busy)
         if busy:
             self.status.setText(self.tr("working"))
@@ -198,7 +220,11 @@ class FastIPTVWindow(QMainWindow):
         if not filename:
             return
         path = Path(filename)
-        self._start_task(lambda: load_playlist_file(path), lambda channels: self._playlist_loaded(channels, path.name, str(path)), "playlist_error")
+        self._start_task(
+            lambda: load_playlist_file(path),
+            lambda channels: self._playlist_loaded(channels, path.name, str(path)),
+            "playlist_error",
+        )
 
     def open_url(self) -> None:
         url, accepted = QInputDialog.getText(self, self.tr("open_url"), self.tr("url_prompt"))
@@ -211,12 +237,49 @@ class FastIPTVWindow(QMainWindow):
             "playlist_error",
         )
 
+    def _refresh_recent_combo(self) -> None:
+        current = self.recent_combo.currentData()
+        self.recent_combo.blockSignals(True)
+        self.recent_combo.clear()
+        for source in self.settings.recent_playlists:
+            label = source if len(source) <= 100 else f"{source[:97]}…"
+            self.recent_combo.addItem(label, source)
+        if current:
+            index = self.recent_combo.findData(current)
+            if index >= 0:
+                self.recent_combo.setCurrentIndex(index)
+        self.recent_combo.blockSignals(False)
+        self.open_recent_button.setEnabled(bool(self.settings.recent_playlists) and not self._tasks)
+
+    def open_recent(self) -> None:
+        source = str(self.recent_combo.currentData() or "").strip()
+        if not source:
+            self.status.setText(self.tr("recent_empty"))
+            return
+        if source.lower().startswith(("http://", "https://")):
+            self._start_task(
+                lambda: parse_m3u(download_playlist_text(source)),
+                lambda channels: self._playlist_loaded(channels, source, source),
+                "playlist_error",
+            )
+            return
+        path = Path(source).expanduser()
+        if not path.is_file():
+            self.status.setText(self.tr("recent_missing", source=source))
+            return
+        self._start_task(
+            lambda: load_playlist_file(path),
+            lambda channels: self._playlist_loaded(channels, path.name, str(path)),
+            "playlist_error",
+        )
+
     def _playlist_loaded(self, channels: list[Channel], source: str, recent: str) -> None:
         self.channels = channels
         if recent:
             self.settings.recent_playlists = [recent] + [item for item in self.settings.recent_playlists if item != recent]
             self.settings.recent_playlists = self.settings.recent_playlists[:10]
             save_settings(self.settings)
+            self._refresh_recent_combo()
         self._rebuild_groups()
         self.apply_filters()
         self.status.setText(self.tr("loaded", count=len(channels), source=source))
@@ -234,16 +297,91 @@ class FastIPTVWindow(QMainWindow):
         self.group.blockSignals(False)
 
     def load_epg_url(self) -> None:
-        default = self.settings.epg_url
-        url, accepted = QInputDialog.getText(self, self.tr("load_epg"), self.tr("epg_prompt"), text=default)
-        url = url.strip()
+        sources = list(self.settings.epg_sources)
+        new_label = self.tr("new_epg_source")
+        if sources:
+            choice, accepted = QInputDialog.getItem(
+                self,
+                self.tr("load_epg"),
+                self.tr("epg_prompt"),
+                sources + [new_label],
+                0,
+                False,
+            )
+            if not accepted:
+                return
+            if choice == new_label:
+                url, accepted = QInputDialog.getText(self, self.tr("load_epg"), self.tr("epg_prompt"))
+            else:
+                url = choice
+        else:
+            url, accepted = QInputDialog.getText(self, self.tr("load_epg"), self.tr("epg_prompt"), text=self.settings.epg_url)
+        url = str(url).strip()
         if not accepted or not url:
             return
+        if not url.lower().startswith(("http://", "https://")):
+            self.status.setText(self.tr("epg_error", error="EPG source must use http:// or https://"))
+            return
+        if url not in self.settings.epg_sources:
+            self.settings.epg_sources.insert(0, url)
+            self.settings.epg_sources = self.settings.epg_sources[:25]
+        self.settings.epg_url = url
+        save_settings(self.settings)
         self._start_task(lambda: parse_xmltv(download_epg(url)), lambda guide: self._epg_loaded(guide, url), "epg_error")
+
+    def manage_epg_sources(self) -> None:
+        actions = [self.tr("add_epg_source"), self.tr("remove_epg_source")]
+        action, accepted = QInputDialog.getItem(
+            self,
+            self.tr("epg_sources"),
+            self.tr("epg_manage_prompt"),
+            actions,
+            0,
+            False,
+        )
+        if not accepted:
+            return
+        if action == self.tr("add_epg_source"):
+            url, accepted = QInputDialog.getText(self, self.tr("epg_sources"), self.tr("epg_prompt"))
+            url = url.strip()
+            if not accepted or not url:
+                return
+            if not url.lower().startswith(("http://", "https://")):
+                self.status.setText(self.tr("epg_error", error="EPG source must use http:// or https://"))
+                return
+            if url not in self.settings.epg_sources:
+                self.settings.epg_sources.insert(0, url)
+                self.settings.epg_sources = self.settings.epg_sources[:25]
+            self.settings.epg_url = url
+            save_settings(self.settings)
+            self.status.setText(self.tr("epg_source_added"))
+            return
+
+        if not self.settings.epg_sources:
+            self.status.setText(self.tr("epg_source_none"))
+            return
+        source, accepted = QInputDialog.getItem(
+            self,
+            self.tr("epg_sources"),
+            self.tr("remove_epg_source"),
+            self.settings.epg_sources,
+            0,
+            False,
+        )
+        if not accepted or not source:
+            return
+        self.settings.epg_sources = [item for item in self.settings.epg_sources if item != source]
+        if self.settings.epg_url == source:
+            self.settings.epg_url = self.settings.epg_sources[0] if self.settings.epg_sources else ""
+        save_settings(self.settings)
+        self.status.setText(self.tr("epg_source_removed"))
 
     def _epg_loaded(self, guide: EPGGuide, url: str) -> None:
         self.guide = guide
         self.settings.epg_url = url
+        if url not in self.settings.epg_sources:
+            self.settings.epg_sources.insert(0, url)
+            self.settings.epg_sources = self.settings.epg_sources[:25]
         save_settings(self.settings)
         self.apply_filters()
         self.status.setText(self.tr("epg_loaded", count=len(guide.names)))
