@@ -1,34 +1,58 @@
 <div align="center">
 
-# FastIPTV Player 2
+<img src="assets/fastiptv.svg" width="160" alt="FastIPTV Player application icon">
+
+# FastIPTV Player 2.1
 
 ### Modern M3U/M3U8 playlist browser, XMLTV guide and VLC launcher
 
-**Python 3.10-3.14 • PySide6 / Qt 6 • M3U/M3U8 • XMLTV • VLC • Windows EXE**
+**Python 3.10-3.14 • PySide6 / Qt 6 • M3U/M3U8 • XMLTV • VLC • Recent Playlists • Windows EXE**
 
 </div>
 
-## What changed in v2
+## Why v2.1 exists
 
-FastIPTV Player 2 replaces the old ~44 KB single-file terminal program with a maintainable desktop application. Playlist parsing, downloads, XMLTV processing, settings and VLC launching now live in separate tested modules. The interface starts in Polish when the system locale is Polish and falls back to English for other locales.
+FastIPTV Player 2 replaced the old ~44 KB single-file terminal program with a safer and maintainable desktop application. The regression audit found that several useful, non-proxy workflows from the classic version were no longer directly available after the rewrite. v2.1 restores them without bringing back automatic public proxy harvesting.
 
-The old public proxy-list aggregation was intentionally removed. FastIPTV is focused on playlists and streams that the user is authorized to access; it does not discover access credentials or supply TV services.
+## Restored and improved classic workflows
+
+- **Recent playlist reopening** is now visible directly in the GUI. Both local M3U/M3U8 files and authorized HTTP/HTTPS playlist URLs can be reopened from the recent list.
+- **Multiple saved EPG sources** are restored. XMLTV/XMLTV.GZ URLs can be added, selected and removed from the GUI instead of keeping only one source.
+- **Safe migration from legacy `config.json`** preserves the old VLC path and EPG source list when modern settings do not exist yet.
+- Legacy proxy-source settings are deliberately ignored during migration.
+- Search, group browsing and current/next EPG information remain available in the modern table interface.
 
 ## Features
 
 - open local `.m3u` and `.m3u8` playlists
 - open authorized remote playlists over HTTP/HTTPS
+- reopen up to 10 recent local/remote playlists from the GUI
 - search by channel name, group or `tvg-id`
 - filter by playlist group and favorites
 - persistent favorites and recent playlist references
-- optional XMLTV / XMLTV.GZ guide with **Now** and **Next** programmes
+- XMLTV / XMLTV.GZ guide with **Now** and **Next** programmes
+- maintain up to 25 saved EPG source URLs
 - safe bounded playlist/EPG downloads with retries and explicit timeouts
 - VLC auto-discovery and configurable VLC executable
 - copy selected stream URL to the clipboard
+- automatic Polish system-locale UI with English fallback
 - dark-blue Windows-friendly interface with `by Swir` footer
-- custom application icon
+- custom application icon displayed here, used by the GUI and embedded in the Windows EXE
 - CI across Python 3.10, 3.11, 3.12, 3.13 and 3.14
 - automated tested Windows EXE + portable ZIP + SHA256 releases
+
+## Intentionally not restored
+
+The classic terminal application could download, aggregate and test public proxy lists. That feature stays removed. v2.1 is focused on playlist management, guide data and playback for streams that the user is entitled or authorized to access. Legacy proxy-source entries in `config.json` are not imported.
+
+## Upgrade from the classic version
+
+The former application stored settings in a repository/application-local `config.json`. When FastIPTV 2.1 starts and its modern per-user settings file does not exist, it can import:
+
+- `vlc_path`
+- `epg_sources`
+
+Proxy configuration is ignored. The old file is not modified, and malformed legacy JSON never prevents the modern application from starting.
 
 ## Run from source
 
@@ -64,18 +88,35 @@ src/fastiptv/              application package
   epg.py                   XMLTV guide parser/matcher
   network.py               bounded HTTP/HTTPS downloads
   vlc.py                   VLC discovery and launcher
-  settings.py              per-user settings
+  settings.py              per-user settings + safe legacy migration
   i18n.py                  Polish/English UI strings
   ui.py                    PySide6 desktop interface
-assets/                     project artwork
-tests/                      unit tests
+assets/fastiptv.svg        application artwork shown in this README
+tests/                      unit and regression tests
 tools/build_icon.py         Windows icon generator
 .github/workflows/          CI and release automation
 ```
 
+## Development and regression tests
+
+```bash
+python -m pip install -e ".[dev]"
+pytest
+python -m compileall -q src main.py run.py
+python tools/build_icon.py
+```
+
+The regression suite covers M3U parsing, XMLTV handling, VLC launch validation, settings round-trips and safe migration of classic VLC/EPG preferences.
+
 ## Releases
 
-Numbered releases contain `FastIPTVPlayer.exe`, a portable Windows ZIP and SHA256 checksum files. The executable is smoke-tested before publication.
+Numbered releases contain:
+
+- `FastIPTVPlayer.exe`
+- `FastIPTVPlayer-vX.Y.Z-Windows-x64.zip`
+- SHA256 checksum files for both downloads
+
+The executable is smoke-tested before publication.
 
 ## Responsible use
 
