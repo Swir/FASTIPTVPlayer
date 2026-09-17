@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0 - 2026-09-17
+
+### Restored
+- Visible recent-playlist reopening for local M3U/M3U8 files and authorized HTTP/HTTPS playlist URLs.
+- Multiple saved XMLTV/XMLTV.GZ EPG sources with add/select/remove controls.
+- One-time migration of classic `config.json` VLC path and EPG source preferences.
+
+### Improved
+- The README now displays the custom FastIPTV application icon and documents the real regression-recovery scope.
+- Recent entries are deduplicated and capped to 10.
+- Saved EPG sources are deduplicated and capped to 25.
+- Legacy proxy-source settings are deliberately excluded from migration.
+- Malformed legacy configuration no longer affects application startup.
+
+### Tested
+- Settings round-trip with multiple EPG sources.
+- Legacy config migration and explicit proxy-setting exclusion.
+- Invalid legacy configuration fallback.
+
 ## 2.0.0 - 2026-09-16
 
 ### Added
