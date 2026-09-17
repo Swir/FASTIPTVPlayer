@@ -11,6 +11,7 @@ def test_settings_round_trip(tmp_path) -> None:
         recent_playlists=["list.m3u"],
         epg_url="https://example.test/epg.xml",
         epg_sources=["https://example.test/epg.xml", "https://example.test/epg2.xml.gz"],
+        proxy_url="127.0.0.1:8080",
     )
     save_settings(original, path)
     loaded = load_settings(path)
@@ -24,11 +25,13 @@ def test_settings_deduplicate_lists() -> None:
             "recent_playlists": ["x", "x"],
             "epg_url": "https://one.test/epg.xml",
             "epg_sources": ["https://one.test/epg.xml", "https://one.test/epg.xml", "https://two.test/epg.xml"],
+            "proxy_url": "proxy.internal:3128",
         }
     )
     assert settings.favorites == ["a", "b"]
     assert settings.recent_playlists == ["x"]
     assert settings.epg_sources == ["https://one.test/epg.xml", "https://two.test/epg.xml"]
+    assert settings.proxy_url == "proxy.internal:3128"
 
 
 def test_legacy_config_migrates_only_safe_preferences(tmp_path) -> None:
@@ -51,6 +54,7 @@ def test_legacy_config_migrates_only_safe_preferences(tmp_path) -> None:
     assert loaded.vlc_path.endswith("vlc.exe")
     assert loaded.epg_url == "https://one.test/epg.xml"
     assert loaded.epg_sources == ["https://one.test/epg.xml", "https://two.test/epg.xml.gz"]
+    assert loaded.proxy_url == ""
     persisted = json.loads(target.read_text(encoding="utf-8"))
     assert "enabled_proxy_sources" not in persisted
     assert "available_proxy_sources" not in persisted
