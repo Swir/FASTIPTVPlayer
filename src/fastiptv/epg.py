@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import re
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -9,6 +10,7 @@ import xml.etree.ElementTree as ET
 from .models import Channel, Programme
 
 MAX_PROGRAMMES = 250_000
+FUZZY_MATCH_CUTOFF = 0.72
 
 
 class EPGError(ValueError):
@@ -42,15 +44,43 @@ class EPGGuide:
         self.names = names
         self.programmes = programmes
         self._name_index: dict[str, str] = {}
+        self._resolve_cache: dict[tuple[str, str], str | None] = {}
         for channel_id, values in names.items():
-            self._name_index.setdefault(normalize_channel_name(channel_id), channel_id)
+            normalized_id = normalize_channel_name(channel_id)
+            if normalized_id:
+                self._name_index.setdefault(normalized_id, channel_id)
             for name in values:
-                self._name_index.setdefault(normalize_channel_name(name), channel_id)
+                normalized = normalize_channel_name(name)
+                if normalized:
+                    self._name_index.setdefault(normalized, channel_id)
+        self._normalized_names = tuple(self._name_index.keys())
 
     def resolve_channel_id(self, channel: Channel) -> str | None:
         if channel.tvg_id and channel.tvg_id in self.programmes:
             return channel.tvg_id
-        return self._name_index.get(normalize_channel_name(channel.name))
+
+        normalized = normalize_channel_name(channel.name)
+        cache_key = (channel.tvg_id, normalized)
+        if cache_key in self._resolve_cache:
+            return self._resolve_cache[cache_key]
+
+        exact = self._name_index.get(normalized)
+        if exact:
+            self._resolve_cache[cache_key] = exact
+            return exact
+
+        # The classic FastIPTV app used difflib to recover EPG matches where
+        # provider/channel naming differed slightly. Keep that useful fallback,
+        # but only after exact tvg-id and normalized-name matching has failed.
+        match = difflib.get_close_matches(
+            normalized,
+            self._normalized_names,
+            n=1,
+            cutoff=FUZZY_MATCH_CUTOFF,
+        )
+        resolved = self._name_index.get(match[0]) if match else None
+        self._resolve_cache[cache_key] = resolved
+        return resolved
 
     def current_next(self, channel: Channel, now: datetime | None = None) -> tuple[Programme | None, Programme | None]:
         channel_id = self.resolve_channel_id(channel)
